@@ -10,7 +10,7 @@ TASKMAIL = {
 	done_state : 4,
 	
 	Task : function(aId, aFolderURI, aFolderName, aTitle, aDesc, aState, aPriority,
-	                aCreateDate, aDueDate, aCompleteDate) {
+	                aCreateDate, aDueDate, aCompleteDate,aPath) {
 		this.id             = aId;							// int
 		this.folderURI      = aFolderURI;
 		this.folderName     = aFolderName;
@@ -21,6 +21,7 @@ TASKMAIL = {
 		this.createDate     = aCreateDate;			// Les dates sont des Date Javascript, null possible.
 		this.dueDate        = aDueDate;
 		this.completeDate   = aCompleteDate;
+		this.path = aPath;
 	},
 	
 	/**
@@ -155,7 +156,7 @@ TASKMAIL.DB = {
 		TASKMAIL.log("getTaskListSQLite");
 		var result = new Array();
 		try {
-			var sql = "select tasks.rowid, title, state, desc, priority, createDate, dueDate, completeDate, tasks.folderURI ";
+			var sql = "select tasks.rowid, title, state, desc, priority, createDate, dueDate, completeDate, tasks.folderURI, path";
 			sql += this.getTaskListWhereClause(stateFilter, viewFilter, folderMsg, mailId, folder, text);
       if (   viewFilter == TASKMAIL.UI.VIEW_FILTER_FOLDER
 			    || viewFilter == TASKMAIL.UI.VIEW_FILTER_SUBFOLDERS
@@ -175,6 +176,7 @@ TASKMAIL.DB = {
 				var dueDate        = this.convertSQLiteToDate(stat.getString(6));
 				var completeDate   = this.convertSQLiteToDate(stat.getString(7));
 				var taskFolder     = stat.getString(8);
+				var path = stat.getString(9)				
 				try {
 					var prettyName = MailUtils.getFolderForURI(taskFolder, false).prettyName;
 				} catch (err) {
@@ -182,7 +184,7 @@ TASKMAIL.DB = {
 					Components.utils.reportError("getTaskListSQLite, taskFolder=" + taskFolder + "erreur=" + err);
 				}
 				var task = new TASKMAIL.Task(id, taskFolder, prettyName, title, desc, state, prio,
-				                             createDate, dueDate, completeDate);
+				                             createDate, dueDate, completeDate,path);
 				result.push(task);
 			}
 		} catch (err) {
@@ -196,7 +198,7 @@ TASKMAIL.DB = {
 		var result = null;
 		try {
 			var stat = this.dbConnection
-					.createStatement("select rowid, title, state, desc, priority, createDate, dueDate, completeDate, folderURI from tasks where rowid = :pk");
+					.createStatement("select rowid, title, state, desc, priority, createDate, dueDate, completeDate, folderURI, path from tasks where rowid = :pk");
 			stat.bindInt32Parameter(0, pk);
 			while (stat.executeStep()) {
 				var id = stat.getInt32(0);
@@ -208,8 +210,9 @@ TASKMAIL.DB = {
 				var dueDate        = this.convertSQLiteToDate(stat.getString(6));
 				var completeDate   = this.convertSQLiteToDate(stat.getString(7));
 				var folderURI      = stat.getString(8);
+				var path = stat.getString(9)				
 				result = new TASKMAIL.Task(id, folderURI, null, title, desc, state, prio, 
-				                           createDate, dueDate, completeDate);
+				                           createDate, dueDate, completeDate,path);
 			}
 		} catch (err) {
 			Components.utils.reportError("getTaskDetailSQLite " + err);
@@ -224,7 +227,7 @@ TASKMAIL.DB = {
 		TASKMAIL.log("addTaskSQLite");
 		var folderURI = aTask.folderURI;
 		var stat = this.dbConnection
-				.createStatement("insert into tasks (title, state, desc, folderURI, priority, createDate, dueDate, completeDate) values (:titleInput, :stateInput, :desc, :folderURI, :priority, :createDate, :dueDate, :completeDate)");
+				.createStatement("insert into tasks (title, state, desc, folderURI, priority, createDate, dueDate, completeDate, path) values (:titleInput, :stateInput, :desc, :folderURI, :priority, :createDate, :dueDate, :completeDate, :path)");
 		stat.bindStringParameter(0, aTask.title);
 		stat.bindStringParameter(1, aTask.state);
 		stat.bindStringParameter(2, aTask.desc);
@@ -233,6 +236,7 @@ TASKMAIL.DB = {
 		if (aTask.createDate != null) stat.bindStringParameter(5, this.convertDateToSQLite(aTask.createDate));
 		if (aTask.dueDate != null) stat.bindStringParameter(6, this.convertDateToSQLite(aTask.dueDate));
 		if (aTask.completeDate != null) stat.bindStringParameter(7, this.convertDateToSQLite(aTask.completeDate));
+		stat.bindStringParameter(8, aTask.path);
 		stat.execute();
 	},
 
@@ -242,7 +246,7 @@ TASKMAIL.DB = {
 	updateTaskSQLite : function(aTask) {
 		TASKMAIL.log("updateTaskSQLite");
 		var stat = this.dbConnection
-				.createStatement("update tasks set title = :title, state = :state, desc = :desc, priority = :priority, createDate = :create_d, dueDate = :due_d, completeDate = :complete_d where rowid = :pk");
+				.createStatement("update tasks set title = :title, state = :state, desc = :desc, priority = :priority, createDate = :create_d, dueDate = :due_d, completeDate = :complete_d, path = :path_d where rowid = :pk");
 		var createDate = this.convertDateToSQLite(aTask.createDate);
 		var dueDate = this.convertDateToSQLite(aTask.dueDate);
 		var completeDate = this.convertDateToSQLite(aTask.completeDate);				
@@ -254,6 +258,7 @@ TASKMAIL.DB = {
 		if (dueDate != null) stat.bindStringParameter(5, dueDate);
 		if (completeDate != null) stat.bindStringParameter(6, completeDate);
 		stat.bindInt32Parameter (7, aTask.id);
+		stat.bindStringParameter(8, aTask.path);
 		stat.execute();
 	},
 
@@ -660,7 +665,7 @@ TASKMAIL.DB = {
 	 */
 	dbSchema : {
 		tables : {
-			tasks : "folderURI TEXT, title TEXT NOT NULL, state TEXT, desc TEXT, priority INTEGER, createDate TEXT, dueDate TEXT, completeDate TEXT",
+			tasks : "folderURI TEXT, title TEXT NOT NULL, state TEXT, desc TEXT, priority INTEGER, createDate TEXT, dueDate TEXT, completeDate TEXT, path TEXT",
 			links : "folderURI TEXT, messageId TEXT, taskId NUMBER",
 			model_version : "version NUMERIC"
 		}
@@ -690,7 +695,7 @@ TASKMAIL.DB = {
 		this.dbConnection = dbConnection;
 	},
 
-	targetVersion : 7,
+	targetVersion : 8,
 	
 	dbUpgrade : function() {
 		try {
@@ -732,6 +737,9 @@ TASKMAIL.DB = {
 			} 
 			if (currentVersion < 7) {
 				this.dbUpgrade7();
+			} 
+			if (currentVersion < 8) {
+				this.dbUpgrade8();
 			} 
 			if (currentVersion < this.targetVersion) {
 				stat = this.dbConnection
@@ -825,6 +833,10 @@ TASKMAIL.DB = {
 		this.dbConnection.executeSimpleSQL("update tasks set completeDate = current_date where state = '" + TASKMAIL.done_state + "'");
 	},
 	
+	dbUpgrade8 : function() {
+		this.dbConnection.executeSimpleSQL("alter table tasks add column path TEXT");
+	},
+
 	_dbCreate : function(aDBService, aDBFile) {
 		var dbConnection = aDBService.openDatabase(aDBFile);
 		this._dbCreateTables(dbConnection);

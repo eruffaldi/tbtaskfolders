@@ -57,6 +57,9 @@
         		<menuitem label="&add;"          accesskey="A" oncommand="TASKMAIL.UI.beginAddTask('empty')"/>
 				<menuitem label="&addWithLink;"  accesskey="L" oncommand="TASKMAIL.UI.beginAddTaskWithLink()" key="taskmail-add-linked"/>
 				<menuseparator/>
+				<menuitem label="Open Path"     accesskey="O" oncommand="TASKMAIL.UI.openTaskPath('task');" key="taskmail-open-path" id="taskmail-menu.openPath"/>
+<!--								<menuitem label="Link Path"     accesskey="P" oncommand="TASKMAIL.UI.openLinkPath('task');" key="taskmail-link-path" id="taskmail-menu.linkPath"/>-->
+
 				<menuitem label="&markDone;"     accesskey="M" oncommand="TASKMAIL.UI.updateTaskStateDone(event, 4);" key="taskmail-mark-done" id="taskmail-menu.markDone"/>
 				<menu label="&changePriority;"   accesskey="P" id="taskmail-menu.changePriority">
 					<menupopup>
@@ -108,6 +111,9 @@
 		<key                           keycode="VK_F9"         oncommand="TASKMAIL.UI.toggleTaskPane();"              id="taskmail-viewTasksMailsPane"/>
 		<key modifiers="control alt"   keycode="VK_PAGE_UP"    oncommand="TASKMAIL.UI.incrementPriority();"           id="taskmail-increment-task"/>
 		<key modifiers="control alt"   keycode="VK_PAGE_DOWN"  oncommand="TASKMAIL.UI.decrementPriority();"           id="taskmail-decrement-task"/>
+		<key modifiers="shift" key="O" oncommand="TASKMAIL.UI.openTaskPath('task');" id="taskmail-open-path"/>		
+<!--		<key modifiers="shift" key="P" oncommand="TASKMAIL.UI.linkPath('task');" id="taskmail-open-path"/> -->
+
 		<key modifiers="shift"         key="D"                 oncommand="TASKMAIL.UI.updateTaskStateDone(event, 4);" id="taskmail-mark-done"/>
 		<key                           keycode="VK_DELETE"     oncommand="TASKMAIL.UI.removeTask();"                  id="taskmail-suppr"/>
 	</keyset>
@@ -118,6 +124,8 @@
 		<menuitem label="&unlinkTasks;" accesskey="D" oncommand="TASKMAIL.UILink.unlinkTask()"/>
 		<menuitem label="&goNextTask;"  accesskey="A" oncommand="TASKMAIL.UILink.showLinkedTask()" id="taskmail-mailContext.goNextTask" key="taskmail-show-linked"/>
 		<menuitem label="&selectTask;"  accesskey="S" oncommand="TASKMAIL.UILink.selectLinkedTask();"/>
+				<menuitem label="Open Path"     accesskey="O" oncommand="TASKMAIL.UI.openTaskPath('mail');" key="taskmail-open-path" id="taskmail-mailContext.openPath"/>
+<!--				<menuitem label="Link Path"     accesskey="P" oncommand="TASKMAIL.UI.linkPath('mail');" key="taskmail-link-path" id="taskmail-mailContext.linkPath"/> -->
 		<menuseparator/>
 	</menupopup>
 	
@@ -139,6 +147,9 @@
 					<menuitem label="&update;"       accesskey="T" oncommand="TASKMAIL.UI.beginUpdateTask()"/>
 					<menuitem label="&delete;"       accesskey="D" oncommand="TASKMAIL.UI.removeTask()" id="taskmail-row-menu.delete" key="taskmail-suppr"/>
 					<menuseparator/>
+									<menuitem label="Open Path"     accesskey="O" oncommand="TASKMAIL.UI.openTaskPath('task');" key="taskmail-open-path" id="taskmail-row-menu.openPath"/>
+								<!--	<menuitem label="Link Path"     accesskey="O" oncommand="TASKMAIL.UI.openLinkPath('task');" key="taskmail-link-path" id="taskmail-row-menu.linkPath"/> -->
+
 					<menuitem label="&markDone;"     accesskey="M" oncommand="TASKMAIL.UI.updateTaskStateDone(event, 4);" key="taskmail-mark-done" id="taskmail-row-menu.markDone"/>
 					<menu label="&changePriority;"   accesskey="P">
 						<menupopup>
@@ -276,6 +287,12 @@
 						<row flex="1"  minheight="75">
 							<label value="&detail; :" command="taskmail-taskDesc"/>
 							<textbox id="taskmail-taskDesc" multiline="true" rows="5"/>
+						</row>
+						<row>
+							<label value="Path :" control="taskmail-taskPath" class="libelle"/>
+							<textbox id="taskmail-taskPath" flex="1"/>
+							<button label="..."  oncommand="TASKMAIL.UI.selectTaskPathGUI()"/>
+							<button label="Go"  oncommand="TASKMAIL.UI.openTaskPath('edit')"/>
 						</row>
 						<row>		
 							<label value="&state; :"/>  

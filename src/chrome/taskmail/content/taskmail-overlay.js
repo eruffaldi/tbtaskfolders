@@ -1,5 +1,6 @@
 Components.utils.import("resource:///modules/MailUtils.js");
 
+
 if (!TASKMAIL)
 	var TASKMAIL = {};
 if (!TASKMAIL.UI)
@@ -40,7 +41,7 @@ TASKMAIL.UI = {
 		var title = mails.length == 1 ? mails[0].mime2DecodedSubject : null;
 		// With Thunderbird Conversation, selection is null.
 		var desc = selection != null && selection != "" ? selection.toString() : null;
-		var task = new TASKMAIL.Task(0, null, null, title, desc, 1, 5, null, null, null);
+		var task = new TASKMAIL.Task(0, null, null, title, desc, 1, 5, null, null, null,null);
 		return task;
 	},
 
@@ -53,7 +54,7 @@ TASKMAIL.UI = {
 		if (defaultValue == "message") {
 			newTask = this.newTaskFromMessage();
 		} else {
-			newTask = new TASKMAIL.Task(0, null, null, null, null, 1, 5, null, null, null);
+			newTask = new TASKMAIL.Task(0, null, null, null, null, 1, 5, null, null, null,null);
 		}
 		this.fillTaskDetail(newTask);
 		var box = document.getElementById("taskmail-detail-splitter");
@@ -99,10 +100,145 @@ TASKMAIL.UI = {
 	  }
 	  return result;
   },
+
+  linkPath: function (context) // NOT YET WORKING
+  {
+
+		const nsIFilePicker = Components.interfaces.nsIFilePicker;
+		var fp = Components.classes["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
+		fp.init(window, "Select Path", nsIFilePicker.modeGetFolder);
+		fp.appendFilters(nsIFilePicker.filterAll);
+
+		var rv = fp.show();
+		var path = null;
+		if (rv == nsIFilePicker.returnOK || rv == nsIFilePicker.returnReplace) 
+		{
+		  var file = fp.file;
+		   path = fp.file.path;
+		}
+		else
+			return;
+
+		if(context == "task")
+		{
+			var tasks = this.getSelectedTasks();
+			for(var i = 0; i < tasks.length; i++)
+			{
+				var task = TASKMAIL.DB.getTaskDetailSQLite(tasks[i].id);
+				task.path = path;
+				TASKMAIL.DB.updateTaskSQLite(task);
+			}
+
+		}
+		else if(context == "mail")
+		{
+			var mails = gFolderDisplay.selectedMessages;
+			for(var j = 0; j < mails.length; j++)
+			{
+				var ids = TASKMAIL.Link.getTaskIDFromMailID(mails[j].folder.URI, mails[j].messageKey);
+				// multiple
+				for(var i = 0; i < ids.length; i++)
+				{
+					var task = TASKMAIL.DB.getTaskDetailSQLite(ids[i]);
+					task.path = path;
+				TASKMAIL.DB.updateTaskSQLite(task);
+				}
+			}
+		}
+	},
   
+  openTaskPath : function (context)
+  {
+	  	var folderInput;
+	  	if(context == undefined)
+	  	{
+	  		// TODO check if folder or tasks!
+	  	}
+
+  		if(context == "task")
+  		{
+			var tasks = this.getSelectedTasks();
+			for(var i = 0; i < tasks.length; i++)
+			{
+				var task = TASKMAIL.DB.getTaskDetailSQLite(tasks[i].id);
+				folderInput = task.path;
+				if(folderInput != "" && folderInput != null)
+				{
+					var nsLocalFile = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
+					nsLocalFile.initWithPath(folderInput);
+			  		nsLocalFile.QueryInterface(Components.interfaces.nsIFile);
+			  		nsLocalFile.reveal();
+			  	}
+			}
+		}
+		else if (context == "mail")
+		{
+			var mails = gFolderDisplay.selectedMessages;
+			for(var j = 0; j < mails.length; j++)
+			{
+				var ids = TASKMAIL.Link.getTaskIDFromMailID(mails[j].folder.URI, mails[j].messageKey);
+				// multiple
+				for(var i = 0; i < ids.length; i++)
+				{
+					var task = TASKMAIL.DB.getTaskDetailSQLite(ids[i]);
+					var folderInput = task.path;
+					if(folderInput != "" && folderInput != null)
+					{
+						var nsLocalFile = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
+						nsLocalFile.initWithPath(folderInput);
+				  		nsLocalFile.QueryInterface(Components.interfaces.nsIFile);
+				  		nsLocalFile.reveal();
+				  	}
+				}
+			}
+			return;
+		}
+		else if(context == "edit")
+		{
+			folderInput = document.getElementById("taskmail-taskPath").value;
+			if(folderInput != null && folderInput != "")
+			{
+				var nsLocalFile = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
+				nsLocalFile.initWithPath(folderInput);
+		  		nsLocalFile.QueryInterface(Components.interfaces.nsIFile);
+		  		nsLocalFile.reveal();
+		  	}
+		}
+  },
+
+
+  selectTaskPathGUI : function ()
+  {
+		var folderInput = document.getElementById("taskmail-taskPath").value;
+
+		const nsIFilePicker = Components.interfaces.nsIFilePicker;
+		var fp = Components.classes["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
+		fp.init(window, "Select Path", nsIFilePicker.modeGetFolder);
+		fp.appendFilters(nsIFilePicker.filterAll);
+
+		if(folderInput != "")
+		{
+			var f = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
+			f.initWithPath(folderInput);
+			fp.displayDirectory = f;			
+		}
+
+		var rv = fp.show();
+		if (rv == nsIFilePicker.returnOK || rv == nsIFilePicker.returnReplace) {
+		  var file = fp.file;
+		  // Get the path as string. Note that you usually won't 
+		  // need to work with the string paths.
+		  var path = fp.file.path;
+		  // work with returned nsILocalFile...
+		  document.getElementById("taskmail-taskPath").value = path;
+		}
+
+  },
+
   saveTask : function() {
 		var idInput = document.getElementById("taskmail-addTask").value;
 		var titleInput = document.getElementById("taskmail-taskTitle").value;
+		var pathInput = document.getElementById("taskmail-taskPath").value;
 		var stateInput = document.getElementById("taskmail-taskState").selectedItem.value;
 		var desc = document.getElementById("taskmail-taskDesc").value;
 		var prio = document.getElementById("taskmail-taskPriority").selectedIndex;
@@ -115,7 +251,7 @@ TASKMAIL.UI = {
 		if (this.taskDetailPK == -1) {
 			TASKMAIL.DB.addTaskSQLite(new TASKMAIL.Task(idInput,
 					currentMsgFolder.URI, currentMsgFolder.prettyName, titleInput, desc, stateInput,
-					prio, createDate, dueDate, completeDate));
+					prio, createDate, dueDate, completeDate,pathInput));
 			if (this.addWithLink) {
 				var taskId = TASKMAIL.DB.dbConnection.lastInsertRowID;
 				var selectedMessages = gFolderDisplay.selectedMessages;
@@ -125,7 +261,7 @@ TASKMAIL.UI = {
 			}
 		} else {
 			TASKMAIL.DB.updateTaskSQLite(new TASKMAIL.Task(idInput, null, null,
-					titleInput, desc, stateInput, prio, createDate, dueDate, completeDate));
+					titleInput, desc, stateInput, prio, createDate, dueDate, completeDate,pathInput));
 		}
 		this.refreshTaskList();
 		this.cancelSaveTask();
@@ -412,6 +548,7 @@ TASKMAIL.UI = {
   fillTaskDetail : function(aTask) {
 		document.getElementById("taskmail-addTask").value = aTask.id;
 		document.getElementById("taskmail-taskTitle").value = aTask.title;
+		document.getElementById("taskmail-taskPath").value = aTask.path;
 		document.getElementById("taskmail-taskDesc").value = aTask.desc;
 		var stateList = document.getElementById("taskmail-taskState");
 		var ligne = stateList.firstChild;
@@ -889,7 +1026,7 @@ TASKMAIL.UI = {
 			   {
 			   		var taskId = parseInt(listBox.view.getItemAtIndex(c).firstChild.getAttribute("pk"));
 						var folderURI = listBox.view.getItemAtIndex(c).firstChild.getAttribute("folderURI");
-			   		var newTask = new TASKMAIL.Task(taskId, folderURI, null, null, null, null, null, null, null);
+			   		var newTask = new TASKMAIL.Task(taskId, folderURI, null, null, null, null, null, null, null,null);
 			      result.push(newTask);
 			   }
 			}		
@@ -2259,7 +2396,8 @@ TASKMAIL.UIDrag= {
 		var isMail = event.dataTransfer.types.contains("text/x-moz-message") ||
 								 // autorise le drag d'un paragraphe de corps de message.
 		             event.dataTransfer.types.contains("text/_moz_htmlcontext");
-  	if (isMail)
+		var isFile = event.dataTransfer.types.contains("application/x-moz-file");
+  	if (isMail) // NOT WORKING YET || isFile)
   		event.preventDefault();
 	},
 	
@@ -2267,6 +2405,7 @@ TASKMAIL.UIDrag= {
 		TASKMAIL.log("onDropTask" + event.dataTransfer.types);
 		var isMessage = event.dataTransfer.types.contains("text/x-moz-message") ||
 		                event.dataTransfer.types.contains("text/_moz_htmlcontext");
+		var isFile = event.dataTransfer.types.contains("application/x-moz-file");
   	if (isMessage) {
   		var taskList = document.getElementById("taskmail-taskList");
 			var index = taskList.treeBoxObject.getRowAt(event.clientX, event.clientY);
@@ -2280,8 +2419,30 @@ TASKMAIL.UIDrag= {
 			} else {
 			 // Drop on no task => create new one with link.
 			 TASKMAIL.UI.beginAddTaskWithLink();
+      }      
+
+		}			      
+        else if(isFile) // NOT WORKING YET
+      {
+      	var file = event.dataTransfer.mozGetDataAt("application/x-moz-file", 0);
+		  if (file instanceof Components.interfaces.nsIFile)
+		  {
+
+		  		var taskList = document.getElementById("taskmail-taskList");
+					var index = taskList.treeBoxObject.getRowAt(event.clientX, event.clientY);
+					if (index != -1) {
+						var row = taskList.contentView.getItemAtIndex(index);
+						var taskId = row.firstChild.getAttribute("pk");
+						var task = TASKMAIL.DB.getTaskDetailSQLite(taskId);
+						task.path = file.path;
+						TASKMAIL.DB.updateTaskSQLite(task);
+					}      		
+			}
+			else
+			{
+			}
       }
-		}			
+
 	},
 	
 	onOverMail : function (event) {
