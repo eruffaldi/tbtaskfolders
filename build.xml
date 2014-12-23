@@ -9,7 +9,7 @@
      ====================================================================== -->
 <project name="TasksAndMails" default="default">
     <description>
-            Thunderbird extension
+            Thunderbird extension (modified)
     </description>
 
 		<xmlproperty file="src/install.rdf" keeproot="false"/>
@@ -18,20 +18,24 @@
           target: default              
          ================================= -->
     <target name="default" description="Thunderbird extension"
-    	depends="mozdev,mozilla">
+    	depends="mozdev,mozilla,mozillageneric">
     </target>
 
   <target name="mozdev" description="build archive for mozdev">
-		<zip destfile="build/mozdev/tasksandmails-${Description.em:version}.xpi">
+		<zip destfile="build/mozdev/tasksandmailsfo-${Description.em:version}.xpi">
 			<fileset dir="src/"/>
   	</zip>
   </target>
 
 	<target name="mozilla" depends="mozilla_install" description="build archive for mozilla">
-  	<zip destfile="build/mozilla.org/tasksandmails-${Description.em:version}.xpi">
+  	<zip destfile="build/mozilla.org/tasksandmailsfo-${Description.em:version}.xpi">
 			<fileset dir="src/" excludes="install.rdf"/>
   		<fileset dir="build/mozilla.org/" includes="install.rdf"/>
   	</zip>
+  </target>
+
+  <target name="mozillageneric" depends="mozilla" description="generic name for repository">
+    <copy file="build/mozilla.org/tasksandmailsfo-${Description.em:version}.xpi" tofile="build/mozilla.org/tasksandmailsfo.xpi"/>
   </target>
 
 	<target name="mozilla_install" description="make install.rdf for mozilla.org">

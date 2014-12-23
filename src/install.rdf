@@ -4,10 +4,10 @@
   
     <!-- Tasks and mails -->
     <em:id>{c7adabc0-01aa-11df-8a39-0800200c9a66}</em:id>
-    <em:name>tasks and mails</em:name>
-    <em:version>2.5</em:version>
+    <em:name>tasks and mails + folders</em:name>
+    <em:version>2.5.1</em:version>
     <em:description>Tasks management based on linking tasks to emails.</em:description>
-    <em:creator>gilles orsini</em:creator>
+    <em:creator>gilles orsini (+ emanuele ruffald)</em:creator>
     <em:type>2</em:type>
 
     <!-- Thunderbird -->
